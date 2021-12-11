@@ -43,9 +43,36 @@ class ServicioTest {
         Flux<String> source = servicio.buscarTodosFiltro();
         StepVerifier
                 .create(source)
+                .expectNext("JOHN")
+                .expectNextMatches(name -> name.startsWith("MA"))
+                .expectNext("CLOE", "CATE")
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    void testTodosFiltrosError() {
+        Flux<String> source = servicio.buscarTodosFiltroError();
+        Flux<String> error = source.concatWith(
+                Mono.error(new IllegalArgumentException("Mensaje de Error"))
+        );
+        StepVerifier
+                .create(error)
                 .expectNextCount(4)
                 .expectErrorMatches(throwable -> throwable instanceof IllegalArgumentException &&
                         throwable.getMessage().equals("Mensaje de Error")
                 ).verify();
     }
+
+    @Test
+    void testEmitter() {
+        Flux<Integer> source = servicio.emitter();
+        StepVerifier.create(source)
+                .expectNext(2)
+                .expectComplete()
+                .verifyThenAssertThat()
+                .hasDropped(4)
+                .tookLessThan(Duration.ofMillis(1050));
+        }
+
 }
